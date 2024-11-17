@@ -1,87 +1,129 @@
-import {View, Text, StyleSheet} from 'react-native';
-import React from 'react';
+import {
+  StyleSheet,
+  TouchableOpacity,
+  View,
+  Image,
+  ScrollView,
+} from 'react-native';
+import React, {useState} from 'react';
 import {Header, TextInput} from '../../components/molecules';
 import {Button, Gap} from '../../components/atoms';
-import {BackArrow} from '../../assets/icon';
+import {NullPhoto} from '../../assets/icon';
+import {launchImageLibrary} from 'react-native-image-picker';
+import {showMessage} from 'react-native-flash-message';
+import {getAuth, createUserWithEmailAndPassword} from 'firebase/auth';
 
-const SignUp = () => {
+const SignUp = ({navigation}) => {
+  const [photo, setPhoto] = useState(NullPhoto);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const getImage = async () => {
+    const result = await launchImageLibrary({
+      maxWidth: 100,
+      maxHeight: 100,
+      quality: 0.5,
+      includeBase64: true,
+    });
+    if (result.didCancel) {
+      showMessage({
+        message: 'Pilih foto dibatalkan',
+        type: 'danger',
+      });
+      setPhoto(NullPhoto);
+    } else {
+      const assets = result.assets[0];
+      const base64 = `data:${assets.type};base64, ${assets.base64}`;
+      setPhoto({uri: base64});
+    }
+  };
+
+  const createUser = () => {
+    const auth = getAuth();
+
+    createUserWithEmailAndPassword(auth, email, password)
+      .then(userCredential => {
+        // Signed up
+        const user = userCredential.user;
+        console.log(user);
+        navigation.navigate('SignIn');
+      })
+      .catch(error => {
+        showMessage({
+          message: error.message,
+          type: 'danger',
+        });
+        // ..
+      });
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <BackArrow style={styles.arrow} />
-        <Header text="Sign Up" />
-      </View>
-      <View style={styles.contentWrapper}>
-        <View style={styles.addPhoto}>
-          <Text style={styles.photoText}>Add Photo</Text>
-          <View style={styles.dashed} />
+      <Header
+        text="Sign Up"
+        backButton={true}
+        onPress={() => navigation.goBack()}
+      />
+
+      <ScrollView
+        style={styles.contentWrapper}
+        showsVerticalScrollIndicator={false}>
+        <View style={styles.profileContainer}>
+          <View style={styles.profileBorder}>
+            <TouchableOpacity onPress={getImage}>
+              <Image source={photo} style={styles.photo} />
+            </TouchableOpacity>
+          </View>
         </View>
-        <Gap height={32} />
-        <TextInput label="Full name" placeholder="Type your full name" />
-        <Gap height={16} />
+        <TextInput label="Full Name" placeholder="Type your full name" />
+        <Gap height={15} />
         <TextInput
-          label="Email address"
+          label="Email Address"
           placeholder="Type your email address"
+          onChangeText={e => setEmail(e)}
         />
-        <Gap height={16} />
-        <TextInput label="Password" placeholder="Type your password" />
+        <Gap height={15} />
+        <TextInput
+          label="Password"
+          placeholder="Type your password"
+          onChangeText={e => setPassword(e)}
+        />
         <Gap height={24} />
-        <Button text="Continue" textColor="#FFFFFF" />
-      </View>
+        <Button text="Continue" onPress={createUser} />
+      </ScrollView>
     </View>
   );
 };
+
+export default SignUp;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
+  profileContainer: {
     alignItems: 'center',
-    paddingLeft: 24,
-    backgroundColor: '#FFFFFF',
+    marginTop: 24,
+  },
+  profileBorder: {
+    borderWidth: 3,
+    borderStyle: 'dashed',
+    borderColor: '#8D92A3',
+    height: 110,
+    width: 110,
+    borderRadius: 110 / 2,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   contentWrapper: {
     marginTop: 24,
-    flex: 1,
     backgroundColor: '#FFFFFF',
+    flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 25,
-    flexGrow: 1,
   },
-  addPhoto: {
-    alignItems: 'center',
-    alignSelf: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F0F0F0',
-    borderRadius: 300,
-    height: 85,
-    width: 85,
-    position: 'relative',
-  },
-  photoText: {
-    fontFamily: 'Poppins-Regular',
-    fontSize: 14,
-    lineHeight: 21,
-    width: 40,
-    height: 42,
-    textAlign: 'center',
-    position: 'absolute',
-  },
-  dashed: {
-    borderRadius: 300,
-    height: 105,
-    width: 105,
-    borderWidth: 2.5,
-    borderColor: '#8D92A3',
-    borderStyle: 'dashed',
-    position: 'absolute',
-  },
-  arrow: {
-    width: 11,
-    height: 19,
-    marginRight: 10,
+  photo: {
+    height: 90,
+    width: 90,
+    borderRadius: 90 / 2,
   },
 });
-export default SignUp;
